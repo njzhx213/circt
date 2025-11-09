@@ -1,0 +1,6 @@
+--- !FileInfo:
+  filepath: "/home/user/workspace/mlir-pass-demo/include/Passes.td"
+  includes: "/home/user/workspace/mlir-pass-demo;/home/user/workspace/mlir-pass-demo/build;/home/user/workspace/mlir-pass-demo/include;/home/user/circt/include;/home/user/circt/build/Debug/include;/home/user/circt/llvm/mlir/include;/home/user/circt/llvm/build/Debug/tools/mlir/include;/home/user/circt/llvm/llvm/include;/home/user/circt/llvm/build/Debug/include"
+--- !FileInfo:
+  filepath: "/home/user/workspace/mlir-pass-demo/include/Passes.td"
+  includes: "/home/user/workspace/mlir-pass-demo;/home/user/workspace/mlir-pass-demo/build;/home/user/workspace/mlir-pass-demo/include;/home/user/circt/include;/home/user/circt/build/Debug/include;/home/user/circt/llvm/mlir/include;/home/user/circt/llvm/build/Debug/tools/mlir/include;/home/user/circt/llvm/llvm/include;/home/user/circt/llvm/build/Debug/include"
