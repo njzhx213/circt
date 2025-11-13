@@ -1,0 +1,67 @@
+#include "mlir/IR/PatternMatch.h"
+#include "mlir/Pass/Pass.h"
+#include "mlir/Transforms/GreedyPatternRewriteDriver.h"
+#include "circt/Dialect/HW/HWOps.h"
+#include "circt/Dialect/SV/SVOps.h"
+
+// 生成 per-pass 的声明+定义
+#define GEN_PASS_DECL_DFFDEMO
+#define GEN_PASS_DEF_DFFDEMO
+#include "Passes.h.inc"
+
+using namespace mlir;
+using namespace circt;
+
+namespace {
+
+struct FlipI1ConstPattern : OpRewritePattern<hw::ConstantOp> {
+  using OpRewritePattern<hw::ConstantOp>::OpRewritePattern;
+  LogicalResult matchAndRewrite(hw::ConstantOp op, PatternRewriter &rewriter) const override {
+    auto intTy = dyn_cast<IntegerType>(op.getType());
+    if (!intTy || intTy.getWidth() != 1) return failure();
+
+    // 如有 API 差异，改成：auto v = op.getValueAttr().getValue();
+    APInt v = op.getValue();
+    if (v.getBitWidth() != 1 || v.isOne()) return failure();
+
+    APInt one(1, 1);
+    rewriter.replaceOpWithNewOp<hw::ConstantOp>(op, one);
+    return success();
+  }
+};
+
+// 注意用 ::impl 避免与 mlir::impl 冲突
+struct DffDemoPass : public ::impl::DffDemoBase<DffDemoPass> {
+  void runOnOperation() override {
+    ModuleOp mod = getOperation();
+    mod.walk([&](sv::AlwaysFFOp) { /* no-op */ });
+
+    RewritePatternSet patterns(&getContext());
+    patterns.add<FlipI1ConstPattern>(&getContext());
+    if (failed(mlir::applyPatternsGreedily(mod, std::move(patterns))))
+      signalPassFailure();
+  }
+};
+
+} // namespace
+
+// ---------- 优先走：新接口（--load-pass-plugin） ----------
+#if __has_include("mlir/Pass/PassPlugin.h")
+  #include "mlir/Pass/PassPlugin.h"
+  extern "C" ::mlir::PassPluginLibraryInfo mlirGetPassPluginInfo() {
+    return {MLIR_PLUGIN_API_VERSION, "DffDemoPass", "0.1",
+            [](PassRegistration &registry) { registry.insert<DffDemoPass>(); }};
+  }
+
+// ---------- 回退：老接口（静态注册；用于自带驱动） ----------
+#else
+  static PassRegistration<DffDemoPass> reg(
+    []() -> std::unique_ptr<mlir::Pass> { return std::make_unique<DffDemoPass>(); }
+  );
+#endif
+
+// 可选工厂
+std::unique_ptr<Pass> createDffDemo() { return std::make_unique<DffDemoPass>(); }
+
+// 确保提供 TableGen 期望的工厂名
+std::unique_ptr<mlir::Pass> createDffDemo() { return std::make_unique<DffDemoPass>(); }
